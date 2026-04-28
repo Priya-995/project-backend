@@ -10,7 +10,20 @@ dotenv.config();
 
 const app = express();
 
-app.use(cors());
+// ✅ Allow all Vercel URLs + localhost
+const vercelPreview = /^https:\/\/.*\.vercel\.app$/;
+
+// ✅ Removed app.options() entirely — not needed, cors() handles preflight
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || vercelPreview.test(origin) || origin === "http://localhost:8080" || origin === "http://localhost:5173") {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS blocked: ${origin}`));
+    }
+  },
+  credentials: true,
+}));
 app.use(express.json());
 
 app.get("/", (req, res) => {
