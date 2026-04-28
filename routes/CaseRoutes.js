@@ -1,34 +1,36 @@
 const express = require("express");
 const router = express.Router();
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+const Case = require("../models/Case");
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-
-router.get("/test", async (req, res) => {
+router.post("/", async (req, res) => {
   try {
-    const model = genAI.getGenerativeModel({
-      model: "models/gemini-1.5-flash",
+    const newCase = new Case(req.body);
+    await newCase.save();
+
+    res.status(201).json({
+      message: "Case created successfully",
+      data: newCase,
     });
-
-    const result = await model.generateContent({
-      contents: [
-        {
-          parts: [{ text: prompt }],
-        },
-      ],
+  } catch (err) {
+    res.status(500).json({
+      error: "Failed to create case",
+      message: err.message,
     });
+  }
+});
 
-    const text = result.response.text();
-
-    console.log("AI OUTPUT:", text);
-
-    res.json({ output: text });
-
-  } catch (error) {
-    console.error("🔥 FULL ERROR:", error);
+router.get("/", async (req, res) => {
+  try {
+    const cases = await Case.find().sort({ createdAt: -1 });
 
     res.json({
-      error: error.message,
+      count: cases.length,
+      data: cases,
+    });
+  } catch (err) {
+    res.status(500).json({
+      error: "Failed to fetch cases",
+      message: err.message,
     });
   }
 });

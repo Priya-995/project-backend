@@ -1,41 +1,53 @@
+// routes/gemini.js
 const express = require("express");
-const router = express.Router();
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
+const router = express.Router();
+
+// ✅ correct initialization
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
-router.post("/reason", async (req, res) => {
-  console.log("🔥 API HIT"); // 👈 VERY IMPORTANT
+const model = genAI.getGenerativeModel({
+  model: "gemini-2.5-pro",
+});
 
+router.post("/match-reason", async (req, res) => {
   try {
-    const volunteer = req.body.volunteer || req.body;
-
-    const model = genAI.getGenerativeModel({
-      model: "models/gemini-1.5-flash",
-    });
+    const { volunteer, match, caseData } = req.body;
 
     const prompt = `
-Give 2 short reasons why this volunteer is suitable:
+You are ImpactGrid AI.
+
+Explain why this volunteer is suitable.
+
+Case:
+${JSON.stringify(caseData)}
+
+Volunteer:
 ${JSON.stringify(volunteer)}
+
+Match:
+${JSON.stringify(match)}
+
+Give 3 short bullet points.
 `;
 
-    const result = await model.generateContent({
-      contents: [
-        {
-          parts: [{ text: prompt }],
-        },
-      ],
-    });
+    const result = await model.generateContent(prompt);
 
     const text = result.response.text();
 
-    console.log("✅ AI:", text);
-
-    res.json({ reasoning: text });
+    res.json({
+      success: true,
+      reason: text,
+    });
 
   } catch (error) {
-    console.error("🔥 ERROR:", error);
-    res.json({ reasoning: "AI failed" });
+    console.error("Gemini error:", error);
+
+    res.status(500).json({
+      success: false,
+      reason: "AI reasoning failed",
+    });
   }
 });
 

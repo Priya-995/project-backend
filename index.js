@@ -1,32 +1,49 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
-require("dotenv").config();
-
+const dotenv = require("dotenv");
+dotenv.config();
+const caseRoutes = require("./routes/CaseRoutes");
+const volunteerRoutes = require("./routes/VolunteerRoutes");
 const geminiRoutes = require("./routes/gemini");
+
 
 const app = express();
 
-// ✅ FIRST middleware
+// ✅ Allow all Vercel URLs + localhost
+const vercelPreview = /^https:\/\/.*\.vercel\.app$/;
+
+// ✅ Removed app.options() entirely — not needed, cors() handles preflight
 app.use(cors({
-  origin: "http://localhost:5173"
+  origin: (origin, callback) => {
+    if (!origin || vercelPreview.test(origin) || origin === "http://localhost:8080" || origin === "http://localhost:5173") {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS blocked: ${origin}`));
+    }
+  },
+  credentials: true,
 }));
 app.use(express.json());
 
-// ✅ THEN routes
-app.use("/api/gemini", geminiRoutes);
-
 app.get("/", (req, res) => {
-  res.send("Server running ✅");
+  res.send("ImpactGrid API is running");
 });
 
-mongoose.connect(process.env.MONGO_URI)
+app.use("/api/cases", caseRoutes);
+app.use("/api/volunteers", volunteerRoutes);
+app.use("/api/gemini", geminiRoutes);
+
+mongoose
+  .connect(process.env.MONGO_URI)
   .then(() => {
     console.log("✅ MongoDB Connected");
-    console.log("API KEY:", process.env.GEMINI_API_KEY);
 
-    app.listen(3000, () => {
-      console.log("🚀 Server running on port 3000");
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
     });
   })
-  .catch(err => console.log(err));
+  .catch((err) => {
+    console.log("❌ MongoDB Error:", err);
+  });
