@@ -2,11 +2,11 @@ const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
 const dotenv = require("dotenv");
-
+dotenv.config();
 const caseRoutes = require("./routes/CaseRoutes");
 const volunteerRoutes = require("./routes/VolunteerRoutes");
+const geminiRoutes = require("./routes/gemini");
 
-dotenv.config();
 
 const app = express();
 
@@ -32,6 +32,7 @@ app.get("/", (req, res) => {
 
 app.use("/api/cases", caseRoutes);
 app.use("/api/volunteers", volunteerRoutes);
+app.use("/api/gemini", geminiRoutes);
 
 mongoose
   .connect(process.env.MONGO_URI)
